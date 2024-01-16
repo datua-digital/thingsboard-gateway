@@ -24,6 +24,7 @@ class BytesModbusUplinkConverter(ModbusConverter):
     def __init__(self, config):
         self.__datatypes = {
             "timeseries": "telemetry",
+            "timeseries2": "telemetry",
             "attributes": "attributes"
             }
         self.__result = {"deviceName": config.get("deviceName", "ModbusDevice %s" % (str(config["unitId"]))),

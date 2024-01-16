@@ -23,6 +23,7 @@ CHECK_POSTFIX = "_check"
 POLL_PERIOD_POSTFIX = "PollPeriod"
 
 TIMESERIES_PARAMETER = "timeseries"
+TIMESERIES2_PARAMETER = "timeseries2"
 
 MASTER_PARAMETER = "master"
 AVAILABLE_FUNCTIONS_PARAMETER = "available_functions"

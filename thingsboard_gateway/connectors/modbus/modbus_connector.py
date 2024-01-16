@@ -89,7 +89,7 @@ class ModbusConnector(Connector, threading.Thread):
         self.__connected = True
 
         while True:
-            time.sleep(.01)
+            time.sleep(.2)
             self.__process_devices()
 
             if not self.__data_to_convert_queue.empty():
@@ -126,6 +126,11 @@ class ModbusConnector(Connector, threading.Thread):
                                 self.__devices[device][LAST_PREFIX + converted_data_section][key] != value:
                             self.__devices[device][LAST_PREFIX + converted_data_section][key] = value
                             to_send[converted_data_section].append({key: value})
+                        elif self.__devices[device][LAST_PREFIX + converted_data_section][key] == value:
+                            for config_section in ('timeseries', 'timeseries2', 'attributes'):
+                                if (config_section in device_responses) and (key in device_responses[config_section]) and not device_responses[config_section][key]["data_sent"].get(SEND_DATA_ONLY_ON_CHANGE_PARAMETER):
+                                    self.__devices[device][LAST_PREFIX + converted_data_section][key] = value
+                                    to_send[converted_data_section].append({key: value})
         elif converted_data and current_device_config.get(SEND_DATA_ONLY_ON_CHANGE_PARAMETER) is None or \
                 not current_device_config.get(SEND_DATA_ONLY_ON_CHANGE_PARAMETER):
             self.statistics[STATISTIC_MESSAGE_RECEIVED_PARAMETER] += 1
@@ -159,6 +164,7 @@ class ModbusConnector(Connector, threading.Thread):
                                                                  DOWNLINK_PREFIX + CONVERTER_PARAMETER: downlink_converter,
                                                                  NEXT_PREFIX + ATTRIBUTES_PARAMETER + CHECK_POSTFIX: 0,
                                                                  NEXT_PREFIX + TIMESERIES_PARAMETER + CHECK_POSTFIX: 0,
+                                                                 NEXT_PREFIX + TIMESERIES2_PARAMETER + CHECK_POSTFIX: 0,
                                                                  TELEMETRY_PARAMETER: {},
                                                                  ATTRIBUTES_PARAMETER: {},
                                                                  LAST_PREFIX + TELEMETRY_PARAMETER: {},
@@ -180,6 +186,7 @@ class ModbusConnector(Connector, threading.Thread):
         for device in self.__devices:
             current_time = time.time()
             device_responses = {TIMESERIES_PARAMETER: {},
+                                TIMESERIES2_PARAMETER: {},
                                 ATTRIBUTES_PARAMETER: {},
                                 }
             current_device_config = {}
@@ -198,6 +205,8 @@ class ModbusConnector(Connector, threading.Thread):
                                 current_data = current_device_config[config_section][interested_data]
                                 current_data[DEVICE_NAME_PARAMETER] = device
                                 input_data = self.__function_to_device(current_data, unit_id)
+                                if current_data.get(SEND_DATA_ONLY_ON_CHANGE_PARAMETER) is None:
+                                    current_data[SEND_DATA_ONLY_ON_CHANGE_PARAMETER] = current_device_config.get(SEND_DATA_ONLY_ON_CHANGE_PARAMETER)
                                 device_responses[config_section][current_data[TAG_PARAMETER]] = {
                                     "data_sent": current_data,
                                     "input_data": input_data}
@@ -208,7 +217,7 @@ class ModbusConnector(Connector, threading.Thread):
                                                                                                        config_section + POLL_PERIOD_POSTFIX] / 1000
                             log.debug('Device response: ', device_responses)
 
-                if device_responses.get('timeseries') or device_responses.get('attributes'):
+                if device_responses.get('timeseries') or device_responses.get('timeseries2') or device_responses.get('attributes'):
                     self.__data_to_convert_queue.put((device, current_device_config, {
                         **current_device_config,
                         BYTE_ORDER_PARAMETER: current_device_config.get(BYTE_ORDER_PARAMETER,
@@ -218,7 +227,7 @@ class ModbusConnector(Connector, threading.Thread):
                         }, device_responses))
             except ConnectionException:
                 time.sleep(5)
-                log.error("Connection lost! Reconnecting...")
+                log.error("Connection lost! Reconnecting " + device + " ...")
             except Exception as e:
                 log.exception(e)
 

@@ -63,17 +63,18 @@ class TBGatewayService:
         if config_file is None:
             config_file = path.dirname(path.dirname(path.abspath(__file__))) + '/config/tb_gateway.yaml'.replace('/',
                                                                                                                  path.sep)
+        gateway_name = path.splitext(path.basename(config_file))[0]
         with open(config_file) as general_config:
             self.__config = safe_load(general_config)
         self._config_dir = path.dirname(path.abspath(config_file)) + path.sep
         logging_error = None
         try:
-            logging.config.fileConfig(self._config_dir + "logs.conf", disable_existing_loggers=False)
+            logging.config.fileConfig(path.join(self._config_dir, gateway_name + "_logs.conf"), disable_existing_loggers=False)
         except Exception as e:
             logging_error = e
         global log
         log = logging.getLogger('service')
-        log.info("Gateway starting...")
+        log.info("Gateway" + gateway_name + "starting...")
         self.__updater = TBUpdater()
         self.__updates_check_period_ms = 300000
         self.__updates_check_time = 0
@@ -87,7 +88,7 @@ class TBGatewayService:
         self.name = ''.join(choice(ascii_lowercase) for _ in range(64))
         self.__rpc_register_queue = Queue(-1)
         self.__rpc_requests_in_progress = {}
-        self.__connected_devices_file = "connected_devices.json"
+        self.__connected_devices_file = "connected_devices_" + gateway_name + ".json"
         self.tb_client = TBClient(self.__config["thingsboard"], self._config_dir)
         try:
             self.tb_client.disconnect()
@@ -195,7 +196,7 @@ class TBGatewayService:
                     self.__rpc_requests_in_progress = new_rpc_request_in_progress
                 else:
                     try:
-                        sleep(.1)
+                        sleep(.2)
                     except Exception as e:
                         log.exception(e)
                         break
@@ -417,6 +418,8 @@ class TBGatewayService:
                         log.error('Data from the device "%s" cannot be saved, connector name is %s.',
                                   data["deviceName"],
                                   connector_name)
+                else:
+                    sleep(0.2)
             except Exception as e:
                 log.error(e)
 
@@ -480,7 +483,7 @@ class TBGatewayService:
                             if not self.tb_client.is_connected():
                                 continue
                             while self.__rpc_reply_sent:
-                                sleep(.01)
+                                sleep(.2)
 
                             self.__send_data(devices_data_in_event_pack)
                             sleep(self.__min_pack_send_delay_ms)
@@ -508,7 +511,7 @@ class TBGatewayService:
                                 except Exception as e:
                                     log.exception(e)
                                     success = False
-                                sleep(.01)
+                                sleep(.2)
                             if success:
                                 self._event_storage.event_pack_processing_done()
                                 del devices_data_in_event_pack
@@ -516,9 +519,9 @@ class TBGatewayService:
                         else:
                             continue
                     else:
-                        sleep(.01)
+                        sleep(.2)
                 else:
-                    sleep(.1)
+                    sleep(.2)
             except Exception as e:
                 log.exception(e)
                 sleep(1)
