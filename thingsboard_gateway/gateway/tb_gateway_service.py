@@ -502,6 +502,7 @@ class TBGatewayService:
                                     success = False
                                     break
                                 event = self._published_events.get(False, 10)
+                                log.debug(event)
                                 try:
                                     if self.tb_client.is_connected() and (
                                             self.__remote_configurator is None or not self.__remote_configurator.in_process):
