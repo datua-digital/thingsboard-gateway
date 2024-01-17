@@ -74,7 +74,7 @@ class TBGatewayService:
             logging_error = e
         global log
         log = logging.getLogger('service')
-        log.info("Gateway" + gateway_name + "starting...")
+        log.info("Gateway " + gateway_name + " starting...")
         self.__updater = TBUpdater()
         self.__updates_check_period_ms = 300000
         self.__updates_check_time = 0
@@ -436,6 +436,7 @@ class TBGatewayService:
         while not self.stopped:
             try:
                 if self.tb_client.is_connected():
+                    log.debug("Thingsboard client is connected.")
                     size = getsizeof(str(devices_data_in_event_pack))-2
                     events = []
 
@@ -481,10 +482,12 @@ class TBGatewayService:
 
                         if devices_data_in_event_pack:
                             if not self.tb_client.is_connected():
+                                log.debug("Thingsboard client is not connected.")
                                 continue
                             while self.__rpc_reply_sent:
                                 sleep(.2)
 
+                            log.debug("Sending data to thingsboard.")
                             self.__send_data(devices_data_in_event_pack)
                             sleep(self.__min_pack_send_delay_ms)
 
@@ -503,6 +506,7 @@ class TBGatewayService:
                                     if self.tb_client.is_connected() and (
                                             self.__remote_configurator is None or not self.__remote_configurator.in_process):
                                         if self.tb_client.client.quality_of_service == 1:
+                                            log.debug(event.get())
                                             success = event.get() == event.TB_ERR_SUCCESS
                                         else:
                                             success = True
@@ -522,6 +526,7 @@ class TBGatewayService:
                         sleep(.2)
                 else:
                     sleep(.2)
+                    log.debug("Thingsboard client is not connected.")
             except Exception as e:
                 log.exception(e)
                 sleep(1)
@@ -531,6 +536,7 @@ class TBGatewayService:
             for device in devices_data_in_event_pack:
                 if devices_data_in_event_pack[device].get("attributes"):
                     if device == self.name or device == "currentThingsBoardGateway":
+                        log.debug("Send attributes to thingsboard.")
                         self._published_events.put(
                             self.tb_client.client.send_attributes(devices_data_in_event_pack[device]["attributes"]))
                     else:
@@ -539,6 +545,7 @@ class TBGatewayService:
                                                                                                 device]["attributes"]))
                 if devices_data_in_event_pack[device].get("telemetry"):
                     if device == self.name or device == "currentThingsBoardGateway":
+                        log.debug("Send telemetry to thingsboard.")
                         self._published_events.put(
                             self.tb_client.client.send_telemetry(devices_data_in_event_pack[device]["telemetry"]))
                     else:

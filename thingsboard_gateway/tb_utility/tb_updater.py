@@ -32,8 +32,8 @@ UPDATE_SERVICE_BASE_URL = "https://updates.thingsboard.io"
 class TBUpdater(Thread):
     def __init__(self):
         super().__init__()
-        self.__version = {"current_version": get_distribution('thingsboard_gateway').version,
-                          "latest_version": get_distribution('thingsboard_gateway').version}
+        self.__version = {"current_version": 'dev',
+                          "latest_version": 'dev'}
         self.__instance_id = str(uuid1())
         self.__platform = system()
         self.__release = release()
