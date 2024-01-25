@@ -220,6 +220,10 @@ class TBGatewayService:
                 if cur_time - self.__updates_check_time >= self.__updates_check_period_ms:
                     self.__updates_check_time = time() * 1000
                     self.version = self.__updater.get_version()
+                
+                if not self._send_thread.is_alive():
+                    log.debug("The send data to thingsboard thread is not alive. Restarting.")
+                    self._send_thread.start()
 
         except KeyboardInterrupt:
             self.__stop_gateway()
@@ -434,6 +438,7 @@ class TBGatewayService:
         log.debug("Send data Thread has been started successfully.")
 
         while not self.stopped:
+            log.debug("Thingsboard send data is runnning.")
             try:
                 if self.tb_client.is_connected():
                     log.debug("Thingsboard client is connected.")
@@ -495,6 +500,7 @@ class TBGatewayService:
                                 self.__remote_configurator is None or not self.__remote_configurator.in_process):
                             success = True
                             while not self._published_events.empty():
+                                log.debug("published events is not empty. Loop")
                                 if (self.__remote_configurator is not None and self.__remote_configurator.in_process) or \
                                         not self.tb_client.is_connected() or \
                                         self._published_events.empty() or \
