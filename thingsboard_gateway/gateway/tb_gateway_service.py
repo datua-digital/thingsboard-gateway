@@ -508,8 +508,11 @@ class TBGatewayService:
                                         self._published_events.empty() or \
                                         self.__rpc_reply_sent:
                                     success = False
+                                    log.debug("Success False")
                                     break
+                                log.debug("Get event")
                                 event = self._published_events.get(False, 10)
+                                log.debug("Got event")
                                 try:
                                     if self.tb_client.is_connected() and (
                                             self.__remote_configurator is None or not self.__remote_configurator.in_process):
@@ -517,6 +520,7 @@ class TBGatewayService:
                                             success = event.get() == event.TB_ERR_SUCCESS
                                         else:
                                             success = True
+                                        log.debug("Client is conected ???")
                                     else:
                                         log.debug("Remote configuration ???")
                                         break
@@ -526,6 +530,7 @@ class TBGatewayService:
                                     success = False
                                     log.debug("Send data not success")
                                 sleep(.2)
+                                log.debug("New while published")
                             if success:
                                 log.debug("Send data success")
                                 self._event_storage.event_pack_processing_done()
@@ -545,6 +550,7 @@ class TBGatewayService:
                 log.debug(e)
                 log.exception(e)
                 sleep(1)
+        log.debug("Thingsboard send data is finished.")
 
     def __send_data(self, devices_data_in_event_pack):
         try:
@@ -553,21 +559,21 @@ class TBGatewayService:
                 log.debug("Send data for device {}".format(device))
                 if devices_data_in_event_pack[device].get("attributes"):
                     if device == self.name or device == "currentThingsBoardGateway":
-                        log.debug("Send attributes to thingsboard.")
+                        log.debug("Send attributes to thingsboard.1")
                         self._published_events.put(
                             self.tb_client.client.send_attributes(devices_data_in_event_pack[device]["attributes"]))
                     else:
-                        log.debug("Send attributes to thingsboard.")
+                        log.debug("Send attributes to thingsboard.2")
                         self._published_events.put(self.tb_client.client.gw_send_attributes(device,
                                                                                             devices_data_in_event_pack[
                                                                                                 device]["attributes"]))
                 if devices_data_in_event_pack[device].get("telemetry"):
                     if device == self.name or device == "currentThingsBoardGateway":
-                        log.debug("Send telemetry to thingsboard.")
+                        log.debug("Send telemetry to thingsboard.1")
                         self._published_events.put(
                             self.tb_client.client.send_telemetry(devices_data_in_event_pack[device]["telemetry"]))
                     else:
-                        log.debug("Send telemetry to thingsboard.")
+                        log.debug("Send telemetry to thingsboard.2")
                         self._published_events.put(self.tb_client.client.gw_send_telemetry(device,
                                                                                            devices_data_in_event_pack[
                                                                                                device]["telemetry"]))
