@@ -447,6 +447,7 @@ class TBGatewayService:
 
                     if self.__remote_configurator is None or not self.__remote_configurator.in_process:
                         events = self._event_storage.get_event_pack()
+                        log.debug("Getting num events: {}".format(len(events)))
 
                     if events:
                         for event in events:
@@ -490,6 +491,7 @@ class TBGatewayService:
                                 log.debug("Thingsboard client is not connected.")
                                 continue
                             while self.__rpc_reply_sent:
+                                log.debug("RPC reply sent loop")
                                 sleep(.2)
 
                             log.debug("Sending data to thingsboard.")
@@ -508,45 +510,54 @@ class TBGatewayService:
                                     success = False
                                     break
                                 event = self._published_events.get(False, 10)
-                                log.debug(event)
                                 try:
                                     if self.tb_client.is_connected() and (
                                             self.__remote_configurator is None or not self.__remote_configurator.in_process):
                                         if self.tb_client.client.quality_of_service == 1:
-                                            log.debug(event.get())
                                             success = event.get() == event.TB_ERR_SUCCESS
                                         else:
                                             success = True
                                     else:
+                                        log.debug("Remote configuration ???")
                                         break
                                 except Exception as e:
+                                    log.debug(e)
                                     log.exception(e)
                                     success = False
+                                    log.debug("Send data not success")
                                 sleep(.2)
                             if success:
+                                log.debug("Send data success")
                                 self._event_storage.event_pack_processing_done()
                                 del devices_data_in_event_pack
                                 devices_data_in_event_pack = {}
                         else:
+                            log.debug("Remote configuration ???")
                             continue
                     else:
+                        log.debug("Events empty")
                         sleep(.2)
                 else:
                     sleep(.2)
                     log.debug("Thingsboard client is not connected.")
             except Exception as e:
+                log.debug("Exception 2")
+                log.debug(e)
                 log.exception(e)
                 sleep(1)
 
     def __send_data(self, devices_data_in_event_pack):
         try:
+            log.debug("Send data.")
             for device in devices_data_in_event_pack:
+                log.debug("Send data for device {}".format(device))
                 if devices_data_in_event_pack[device].get("attributes"):
                     if device == self.name or device == "currentThingsBoardGateway":
                         log.debug("Send attributes to thingsboard.")
                         self._published_events.put(
                             self.tb_client.client.send_attributes(devices_data_in_event_pack[device]["attributes"]))
                     else:
+                        log.debug("Send attributes to thingsboard.")
                         self._published_events.put(self.tb_client.client.gw_send_attributes(device,
                                                                                             devices_data_in_event_pack[
                                                                                                 device]["attributes"]))
@@ -556,11 +567,14 @@ class TBGatewayService:
                         self._published_events.put(
                             self.tb_client.client.send_telemetry(devices_data_in_event_pack[device]["telemetry"]))
                     else:
+                        log.debug("Send telemetry to thingsboard.")
                         self._published_events.put(self.tb_client.client.gw_send_telemetry(device,
                                                                                            devices_data_in_event_pack[
                                                                                                device]["telemetry"]))
                 devices_data_in_event_pack[device] = {"telemetry": [], "attributes": {}}
+                log.debug("Finish sending data for device")
         except Exception as e:
+            log.debug("Error sending data")
             log.exception(e)
 
     def _rpc_request_handler(self, request_id, content):
