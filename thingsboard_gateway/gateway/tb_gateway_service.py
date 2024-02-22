@@ -438,7 +438,6 @@ class TBGatewayService:
         log.debug("Send data Thread has been started successfully.")
 
         while not self.stopped:
-            log.debug("Thingsboard send data is runnning.")
             try:
                 if self.tb_client.is_connected():
                     log.debug("Thingsboard client is connected.")
@@ -514,16 +513,20 @@ class TBGatewayService:
                                 event = self._published_events.get(False, 10)
                                 log.debug("Got event")
                                 try:
+                                    log.debug("before is conected")
                                     if self.tb_client.is_connected() and (
                                             self.__remote_configurator is None or not self.__remote_configurator.in_process):
                                         if self.tb_client.client.quality_of_service == 1:
+                                            log.debug("before event get")
                                             success = event.get() == event.TB_ERR_SUCCESS
+                                            log.debug("after event get")
                                         else:
                                             success = True
                                         log.debug("Client is conected ???")
                                     else:
                                         log.debug("Remote configuration ???")
                                         break
+                                    log.debug("after is conected")
                                 except Exception as e:
                                     log.debug(e)
                                     log.exception(e)
@@ -536,6 +539,7 @@ class TBGatewayService:
                                 self._event_storage.event_pack_processing_done()
                                 del devices_data_in_event_pack
                                 devices_data_in_event_pack = {}
+                            log.debug("finish published events")
                         else:
                             log.debug("Remote configuration ???")
                             continue

@@ -70,7 +70,7 @@ class TBPublishInfo:
         return self.message_info.mid
 
     def get(self):
-        self.message_info.wait_for_publish()
+        self.message_info.wait_for_publish(timeout=2)
         return self.message_info.rc
 
 
