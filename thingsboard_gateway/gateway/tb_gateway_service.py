@@ -485,7 +485,6 @@ class TBGatewayService:
                             if not self.tb_client.is_connected():
                                 continue
                             while self.__rpc_reply_sent:
-                                log.debug("RPC reply sent loop")
                                 sleep(.2)
 
                             self.__send_data(devices_data_in_event_pack)
@@ -512,7 +511,6 @@ class TBGatewayService:
                                     else:
                                         break
                                 except Exception as e:
-                                    log.debug(e)
                                     log.exception(e)
                                     success = False
                                 sleep(.2)
@@ -535,33 +533,27 @@ class TBGatewayService:
 
     def __send_data(self, devices_data_in_event_pack):
         try:
-            log.debug("Send data.")
             for device in devices_data_in_event_pack:
                 log.debug("Send data for device {}".format(device))
                 if devices_data_in_event_pack[device].get("attributes"):
                     if device == self.name or device == "currentThingsBoardGateway":
-                        log.debug("Send attributes to thingsboard.1")
                         self._published_events.put(
                             self.tb_client.client.send_attributes(devices_data_in_event_pack[device]["attributes"]))
                     else:
-                        log.debug("Send attributes to thingsboard.2")
                         self._published_events.put(self.tb_client.client.gw_send_attributes(device,
                                                                                             devices_data_in_event_pack[
                                                                                                 device]["attributes"]))
                 if devices_data_in_event_pack[device].get("telemetry"):
                     if device == self.name or device == "currentThingsBoardGateway":
-                        log.debug("Send telemetry to thingsboard.1")
                         self._published_events.put(
                             self.tb_client.client.send_telemetry(devices_data_in_event_pack[device]["telemetry"]))
                     else:
-                        log.debug("Send telemetry to thingsboard.2")
                         self._published_events.put(self.tb_client.client.gw_send_telemetry(device,
                                                                                            devices_data_in_event_pack[
                                                                                                device]["telemetry"]))
                 devices_data_in_event_pack[device] = {"telemetry": [], "attributes": {}}
                 log.debug("Finish sending data for device")
         except Exception as e:
-            log.debug("Error sending data")
             log.exception(e)
 
     def _rpc_request_handler(self, request_id, content):
