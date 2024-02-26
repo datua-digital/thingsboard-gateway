@@ -220,10 +220,6 @@ class TBGatewayService:
                 if cur_time - self.__updates_check_time >= self.__updates_check_period_ms:
                     self.__updates_check_time = time() * 1000
                     self.version = self.__updater.get_version()
-                
-                if not self._send_thread.is_alive():
-                    log.debug("The send data to thingsboard thread is not alive. Restarting.")
-                    self._send_thread.start()
 
         except KeyboardInterrupt:
             self.__stop_gateway()
@@ -487,13 +483,11 @@ class TBGatewayService:
 
                         if devices_data_in_event_pack:
                             if not self.tb_client.is_connected():
-                                log.debug("Thingsboard client is not connected.")
                                 continue
                             while self.__rpc_reply_sent:
                                 log.debug("RPC reply sent loop")
                                 sleep(.2)
 
-                            log.debug("Sending data to thingsboard.")
                             self.__send_data(devices_data_in_event_pack)
                             sleep(self.__min_pack_send_delay_ms)
 
@@ -501,56 +495,39 @@ class TBGatewayService:
                                 self.__remote_configurator is None or not self.__remote_configurator.in_process):
                             success = True
                             while not self._published_events.empty():
-                                log.debug("published events is not empty. Loop")
                                 if (self.__remote_configurator is not None and self.__remote_configurator.in_process) or \
                                         not self.tb_client.is_connected() or \
                                         self._published_events.empty() or \
                                         self.__rpc_reply_sent:
                                     success = False
-                                    log.debug("Success False")
                                     break
-                                log.debug("Get event")
                                 event = self._published_events.get(False, 10)
-                                log.debug("Got event")
                                 try:
-                                    log.debug("before is conected")
                                     if self.tb_client.is_connected() and (
                                             self.__remote_configurator is None or not self.__remote_configurator.in_process):
                                         if self.tb_client.client.quality_of_service == 1:
-                                            log.debug("before event get")
                                             success = event.get() == event.TB_ERR_SUCCESS
-                                            log.debug("after event get")
                                         else:
                                             success = True
-                                        log.debug("Client is conected ???")
                                     else:
-                                        log.debug("Remote configuration ???")
                                         break
-                                    log.debug("after is conected")
                                 except Exception as e:
                                     log.debug(e)
                                     log.exception(e)
                                     success = False
-                                    log.debug("Send data not success")
                                 sleep(.2)
-                                log.debug("New while published")
                             if success:
-                                log.debug("Send data success")
                                 self._event_storage.event_pack_processing_done()
                                 del devices_data_in_event_pack
                                 devices_data_in_event_pack = {}
-                            log.debug("finish published events")
                         else:
-                            log.debug("Remote configuration ???")
                             continue
                     else:
-                        log.debug("Events empty")
                         sleep(.2)
                 else:
                     sleep(.2)
                     log.debug("Thingsboard client is not connected.")
             except Exception as e:
-                log.debug("Exception 2")
                 log.debug(e)
                 log.exception(e)
                 sleep(1)
