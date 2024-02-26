@@ -267,14 +267,12 @@ class TBDeviceMqttClient:
         return TBPublishInfo(self._client.publish(topic, data, qos))
 
     def send_telemetry(self, telemetry, quality_of_service=None):
-        log.debug("Send telemetry function executed.")
         quality_of_service = quality_of_service if quality_of_service is not None else self.quality_of_service
         if not isinstance(telemetry, list) and not (isinstance(telemetry, dict) and telemetry.get("ts") is not None):
             telemetry = [telemetry]
         return self.publish_data(telemetry, TELEMETRY_TOPIC, quality_of_service)
 
     def send_attributes(self, attributes, quality_of_service=None):
-        log.debug("Send attributes function executed.")
         quality_of_service = quality_of_service if quality_of_service is not None else self.quality_of_service
         return self.publish_data(attributes, ATTRIBUTES_TOPIC, quality_of_service)
 

@@ -526,7 +526,6 @@ class TBGatewayService:
                     sleep(.2)
                     log.debug("Thingsboard client is not connected.")
             except Exception as e:
-                log.debug(e)
                 log.exception(e)
                 sleep(1)
         log.debug("Thingsboard send data is finished.")
