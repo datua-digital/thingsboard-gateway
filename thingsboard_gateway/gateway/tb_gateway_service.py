@@ -433,6 +433,7 @@ class TBGatewayService:
         devices_data_in_event_pack = {}
         log.debug("Send data Thread has been started successfully.")
 
+        qos_try = 0
         while not self.stopped:
             try:
                 if self.tb_client.is_connected():
@@ -506,6 +507,16 @@ class TBGatewayService:
                                             self.__remote_configurator is None or not self.__remote_configurator.in_process):
                                         if self.tb_client.client.quality_of_service == 1:
                                             success = event.get() == event.TB_ERR_SUCCESS
+                                            if not event.is_published():
+                                                success = False
+                                                qos_try += 1
+                                                if qos_try >= 3:
+                                                    try:
+                                                        self.tb_client.disconnect()
+                                                    except Exception as e:
+                                                        log.exception(e)
+                                                    self.tb_client.connect()
+                                                    self.subscribe_to_required_topics()
                                         else:
                                             success = True
                                     else:
@@ -518,6 +529,7 @@ class TBGatewayService:
                                 self._event_storage.event_pack_processing_done()
                                 del devices_data_in_event_pack
                                 devices_data_in_event_pack = {}
+                                qos_try = 0
                         else:
                             continue
                     else:

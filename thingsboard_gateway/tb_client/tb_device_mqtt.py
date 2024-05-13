@@ -71,7 +71,13 @@ class TBPublishInfo:
 
     def get(self):
         self.message_info.wait_for_publish(timeout=2)
+        log.debug(f"Return value from mesage rc: {self.message_info.rc}")
         return self.message_info.rc
+
+    def is_published(self):
+        is_published = self.message_info.is_published()
+        log.debug(f"Return value from mesage published: {is_published}")
+        return is_published
 
 
 class TBDeviceMqttClient:
