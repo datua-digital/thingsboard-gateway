@@ -537,7 +537,7 @@ class TBGatewayService:
                 else:
                     sleep(.2)
                     log.debug("Thingsboard client is not connected.")
-                    self.tb_client.connect()
+                    self.tb_client.client.connect()
             except Exception as e:
                 log.exception(e)
                 sleep(1)
