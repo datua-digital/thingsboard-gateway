@@ -515,8 +515,7 @@ class TBGatewayService:
                                                     count_not_published += 1
                                                     log.debug(f"Not published count {count_not_published}")
                                                 else:
-                                                    self.tb_client.disconnect()
-                                                    self.__paused = False
+                                                    self.tb_client.stop()
                                                     log.debug("Thingsboard client is disconected because too many not published messages.")
                                         else:
                                             success = True
@@ -538,6 +537,7 @@ class TBGatewayService:
                     sleep(.2)
                     log.debug("Thingsboard client is not connected.")
                     self.tb_client.connect()
+                    self.tb_client.start()
             except Exception as e:
                 log.exception(e)
                 sleep(1)
