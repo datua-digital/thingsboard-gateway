@@ -490,6 +490,8 @@ class TBGatewayService:
                             self.__send_data(devices_data_in_event_pack)
                             sleep(self.__min_pack_send_delay_ms)
 
+                        count_not_published = 0
+
                         if self.tb_client.is_connected() and (
                                 self.__remote_configurator is None or not self.__remote_configurator.in_process):
                             success = True
@@ -505,7 +507,16 @@ class TBGatewayService:
                                     if self.tb_client.is_connected() and (
                                             self.__remote_configurator is None or not self.__remote_configurator.in_process):
                                         if self.tb_client.client.quality_of_service == 1:
-                                            success = event.get() == event.TB_ERR_SUCCESS
+                                            success = event.get()[0] == event.TB_ERR_SUCCESS
+                                            is_published = event.get()[1]
+                                            if not is_published:
+                                                success = False
+                                                if count_not_published < 5:
+                                                    count_not_published += 1
+                                                    log.debug("Not published count {count_not_published}")
+                                                else:
+                                                    self.tb_client.disconnect()
+                                                    log.debug("Thingsboard client is disconected because too many not published messages.")
                                         else:
                                             success = True
                                     else:
