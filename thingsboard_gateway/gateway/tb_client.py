@@ -113,6 +113,7 @@ class TBClient(threading.Thread):
         self.__paused = False
         self.__stopped = False
         self.__min_reconnect_delay = min_reconnect_delay
+        self.client.connect()
 
     def run(self):
         keep_alive = self.__config.get("keep_alive", 120)
