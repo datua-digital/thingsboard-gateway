@@ -515,6 +515,8 @@ class TBGatewayService:
                                                     log.debug(f"Not published count {self.__not_published}")
                                                 else:
                                                     self.__stop_gateway()
+                                            else:
+                                                self.__not_published = 0
                                         else:
                                             success = True
                                     else:
