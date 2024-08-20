@@ -150,6 +150,7 @@ class TBGatewayService:
                                    name="Send data to Thingsboard Thread")
         self._send_thread.start()
         self.__min_pack_send_delay_ms = self.__config['thingsboard'].get('minPackSendDelayMS', 500) / 1000.0
+        self.__not_published = 0
         log.info("Gateway started.")
 
         try:
@@ -505,7 +506,17 @@ class TBGatewayService:
                                     if self.tb_client.is_connected() and (
                                             self.__remote_configurator is None or not self.__remote_configurator.in_process):
                                         if self.tb_client.client.quality_of_service == 1:
-                                            success = event.get() == event.TB_ERR_SUCCESS
+                                            success = event.get()[0] == event.TB_ERR_SUCCESS
+                                            is_published = event.get()[1]
+                                            if not is_published:
+                                                success = False
+                                                if self.__not_published < 20:
+                                                    self.__not_published += 1
+                                                    log.debug(f"Not published count {self.__not_published}")
+                                                else:
+                                                    self.__stop_gateway()
+                                            else:
+                                                self.__not_published = 0
                                         else:
                                             success = True
                                     else:
@@ -515,6 +526,7 @@ class TBGatewayService:
                                     success = False
                                 sleep(.2)
                             if success:
+                                self.__not_published = 0
                                 self._event_storage.event_pack_processing_done()
                                 del devices_data_in_event_pack
                                 devices_data_in_event_pack = {}

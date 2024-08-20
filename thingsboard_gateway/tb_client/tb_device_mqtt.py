@@ -71,7 +71,10 @@ class TBPublishInfo:
 
     def get(self):
         self.message_info.wait_for_publish(timeout=2)
-        return self.message_info.rc
+        is_published = self.message_info.is_published()
+        log.debug(f"Return value from mesage rc: {self.message_info.rc}")
+        log.debug(f"Return value from mesage published: {is_published}")
+        return (self.message_info.rc, self.message_info.is_published())
 
 
 class TBDeviceMqttClient:
@@ -258,7 +261,6 @@ class TBDeviceMqttClient:
 
     def publish_data(self, data, topic, qos):
         data = dumps(data)
-        log.debug(data)
         if qos is None:
             qos = self.quality_of_service
         if qos not in (0, 1):
