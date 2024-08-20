@@ -150,6 +150,7 @@ class TBGatewayService:
                                    name="Send data to Thingsboard Thread")
         self._send_thread.start()
         self.__min_pack_send_delay_ms = self.__config['thingsboard'].get('minPackSendDelayMS', 500) / 1000.0
+        self.__not_published = 0
         log.info("Gateway started.")
 
         try:
@@ -490,8 +491,6 @@ class TBGatewayService:
                             self.__send_data(devices_data_in_event_pack)
                             sleep(self.__min_pack_send_delay_ms)
 
-                        count_not_published = 0
-
                         if self.tb_client.is_connected() and (
                                 self.__remote_configurator is None or not self.__remote_configurator.in_process):
                             success = True
@@ -511,19 +510,11 @@ class TBGatewayService:
                                             is_published = event.get()[1]
                                             if not is_published:
                                                 success = False
-                                                if count_not_published < 10:
-                                                    count_not_published += 1
-                                                    log.debug(f"Not published count {count_not_published}")
+                                                if self.__not_published < 20:
+                                                    self.__not_published += 1
+                                                    log.debug(f"Not published count {self.__not_published}")
                                                 else:
-                                                    count_not_published = 0
-                                                    log.debug("Thingsboard client is disconected because too many not published messages.")
-                                                    self.tb_client = TBClient(self.__config["thingsboard"], self._config_dir)
-                                                    try:
-                                                        self.tb_client.disconnect()
-                                                    except Exception as e:
-                                                        log.exception(e)
-                                                    self.tb_client.connect()
-                                                    self.subscribe_to_required_topics()
+                                                    self.__stop_gateway()
                                         else:
                                             success = True
                                     else:
@@ -533,6 +524,7 @@ class TBGatewayService:
                                     success = False
                                 sleep(.2)
                             if success:
+                                self.__not_published = 0
                                 self._event_storage.event_pack_processing_done()
                                 del devices_data_in_event_pack
                                 devices_data_in_event_pack = {}
