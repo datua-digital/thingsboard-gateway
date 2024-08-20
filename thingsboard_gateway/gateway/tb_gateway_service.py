@@ -511,12 +511,13 @@ class TBGatewayService:
                                             is_published = event.get()[1]
                                             if not is_published:
                                                 success = False
-                                                if count_not_published < 5:
+                                                if count_not_published < 10:
                                                     count_not_published += 1
                                                     log.debug(f"Not published count {count_not_published}")
                                                 else:
                                                     self.tb_client.disconnect()
                                                     self.tb_client.stop()
+                                                    count_not_published = 0
                                                     log.debug("Thingsboard client is disconected because too many not published messages.")
                                         else:
                                             success = True
