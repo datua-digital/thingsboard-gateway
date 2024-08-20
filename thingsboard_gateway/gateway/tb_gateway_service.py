@@ -515,10 +515,16 @@ class TBGatewayService:
                                                     count_not_published += 1
                                                     log.debug(f"Not published count {count_not_published}")
                                                 else:
-                                                    self.tb_client.disconnect()
-                                                    self.tb_client.stop()
                                                     count_not_published = 0
                                                     log.debug("Thingsboard client is disconected because too many not published messages.")
+                                                    self.tb_client.stop()
+                                                    self.tb_client = TBClient(self.__config["thingsboard"], self._config_dir)
+                                                    try:
+                                                        self.tb_client.disconnect()
+                                                    except Exception as e:
+                                                        log.exception(e)
+                                                    self.tb_client.connect()
+                                                    self.subscribe_to_required_topics()
                                         else:
                                             success = True
                                     else:
@@ -538,13 +544,6 @@ class TBGatewayService:
                 else:
                     sleep(.2)
                     log.debug("Thingsboard client is not connected.")
-                    self.tb_client = TBClient(self.__config["thingsboard"], self._config_dir)
-                    try:
-                        self.tb_client.disconnect()
-                    except Exception as e:
-                        log.exception(e)
-                    self.tb_client.connect()
-                    self.subscribe_to_required_topics()
                     self.__subscribed_to_rpc_topics = True
             except Exception as e:
                 log.exception(e)

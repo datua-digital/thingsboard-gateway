@@ -96,7 +96,7 @@ class TBClient(threading.Thread):
             self.client._on_disconnect(client, userdata, result_code)
 
     def stop(self):
-        # self.disconnect()
+        self.disconnect()
         self.client.stop()
         self.__stopped = True
 
