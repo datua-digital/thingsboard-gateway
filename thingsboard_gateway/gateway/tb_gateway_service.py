@@ -150,7 +150,9 @@ class TBGatewayService:
                                    name="Send data to Thingsboard Thread")
         self._send_thread.start()
         self.__min_pack_send_delay_ms = self.__config['thingsboard'].get('minPackSendDelayMS', 500) / 1000.0
+        # changes by datua
         self.__not_published = 0
+        self.__sum_not_connected = 0
         log.info("Gateway started.")
 
         try:
@@ -527,6 +529,7 @@ class TBGatewayService:
                                 sleep(.2)
                             if success:
                                 self.__not_published = 0
+                                self.__sum_not_connected = 0
                                 self._event_storage.event_pack_processing_done()
                                 del devices_data_in_event_pack
                                 devices_data_in_event_pack = {}
@@ -537,6 +540,12 @@ class TBGatewayService:
                 else:
                     sleep(.2)
                     log.debug("Thingsboard client is not connected.")
+                    if self.__sum_not_connected < 40:
+                        self.__sum_not_connected += 1
+                        log.debug(f"Not connected count {self.__sum_not_connected}")
+                    else:
+                        self.__sum_not_connected = 0
+                        self.__stop_gateway()
             except Exception as e:
                 log.exception(e)
                 sleep(1)
