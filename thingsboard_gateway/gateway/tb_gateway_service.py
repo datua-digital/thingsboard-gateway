@@ -540,7 +540,7 @@ class TBGatewayService:
                 else:
                     sleep(.2)
                     log.debug("Thingsboard client is not connected.")
-                    if self.__sum_not_connected < 40:
+                    if self.__sum_not_connected < 320:
                         self.__sum_not_connected += 1
                         log.debug(f"Not connected count {self.__sum_not_connected}")
                     else:
