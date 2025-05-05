@@ -251,6 +251,17 @@ class TBGatewayService:
         self.tb_client.disconnect()
         self.tb_client.stop()
 
+    def __reconnect(self):
+        try:
+            self.tb_client.disconnect()
+        except Exception as e:
+            log.exception(e)
+        self.tb_client.stop()
+        self.tb_client = TBClient(self.__config["thingsboard"], self._config_dir)
+        self.tb_client.connect()
+        self.subscribe_to_required_topics()
+        self.__subscribed_to_rpc_topics = True
+
     def __init_remote_configuration(self, force=False):
         if (self.__config["thingsboard"].get("remoteConfiguration") or force) and self.__remote_configurator is None:
             try:
@@ -512,11 +523,11 @@ class TBGatewayService:
                                             is_published = event.get()[1]
                                             if not is_published:
                                                 success = False
-                                                if self.__not_published < 20:
+                                                if self.__not_published < 50:
                                                     self.__not_published += 1
-                                                    log.debug(f"Not published count {self.__not_published}")
                                                 else:
-                                                    self.__stop_gateway()
+                                                    self.__reconnect()
+                                                    log.debug(f"Reconnected by published error after {self.__not_published} retries.")
                                             else:
                                                 self.__not_published = 0
                                         else:
@@ -542,10 +553,10 @@ class TBGatewayService:
                     log.debug("Thingsboard client is not connected.")
                     if self.__sum_not_connected < 320:
                         self.__sum_not_connected += 1
-                        log.debug(f"Not connected count {self.__sum_not_connected}")
                     else:
                         self.__sum_not_connected = 0
-                        self.__stop_gateway()
+                        self.__reconnect()
+                        log.debug(f"Reconnected by not connected error after {self.__sum_not_connected} retries")
             except Exception as e:
                 log.exception(e)
                 sleep(1)
