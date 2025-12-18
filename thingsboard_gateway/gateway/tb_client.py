@@ -89,8 +89,13 @@ class TBClient(threading.Thread):
         # pylint: disable=protected-access
         if self.client._client != client:
             log.info("TB client %s has been disconnected. Current client for connection is: %s", str(client), str(self.client._client))
-            client.disconnect()
-            client.loop_stop()
+            try:
+                client.loop_stop(force=True)  # Stop threads FIRST
+                client.disconnect()           # THEN send DISCONNECT
+                client.loop_forever() == MQTT_ERR_SUCCESS  # Drain queue
+            except:
+                pass  # Dead clients don't care
+            # No reconnect here - let main loop handle
         else:
             self.__is_connected = False
             self.client._on_disconnect(client, userdata, result_code)
