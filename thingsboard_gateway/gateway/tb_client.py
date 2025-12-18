@@ -92,7 +92,6 @@ class TBClient(threading.Thread):
             try:
                 client.loop_stop(force=True)  # Stop threads FIRST
                 client.disconnect()           # THEN send DISCONNECT
-                client.loop_forever() == MQTT_ERR_SUCCESS  # Drain queue
             except:
                 pass  # Dead clients don't care
             # No reconnect here - let main loop handle
