@@ -32,7 +32,7 @@ class TBClient(threading.Thread):
         self.__port = config.get("port", 1883)
         self.__default_quality_of_service = config.get("qos", 1)
         credentials = config["security"]
-        self.__min_reconnect_delay = 1
+        self.__min_reconnect_delay = 60
         self.__tls = bool(credentials.get('tls', False) or credentials.get('caCert', False))
         self.__ca_cert = None
         self.__private_key = None
@@ -113,7 +113,7 @@ class TBClient(threading.Thread):
         self.client.gw_unsubscribe(subsription_id)
         self.client.unsubscribe_from_attribute(subsription_id)
 
-    def connect(self, min_reconnect_delay=10):
+    def connect(self, min_reconnect_delay=60):
         self.__paused = False
         self.__stopped = False
         self.__min_reconnect_delay = min_reconnect_delay
@@ -130,12 +130,13 @@ class TBClient(threading.Thread):
                         self.client.connect(keepalive=keep_alive,
                                             min_reconnect_delay=self.__min_reconnect_delay)
                     except ConnectionRefusedError:
+                        log.exception("ConnectionRefusedError")
                         pass
                     except Exception as e:
-                        log.exception(e)
-                time.sleep(1)
+                        log.exception("connecting while: " + e)
+                time.sleep(60)
         except Exception as e:
-            log.exception(e)
+            log.exception("connecting outsite while:" + e)
             time.sleep(10)
 
         while not self.__stopped:
