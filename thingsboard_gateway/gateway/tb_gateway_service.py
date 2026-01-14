@@ -257,7 +257,7 @@ class TBGatewayService:
         except Exception as e:
             log.exception(e)
         self.tb_client.stop()
-        self.tb_client.join()
+        self.tb_client.join(60)
         self.tb_client = TBClient(self.__config["thingsboard"], self._config_dir)
         self.tb_client.connect()
         self.subscribe_to_required_topics()
