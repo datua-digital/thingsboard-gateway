@@ -257,6 +257,7 @@ class TBGatewayService:
         except Exception as e:
             log.exception(e)
         self.tb_client.stop()
+        self.tb_client.join()
         self.tb_client = TBClient(self.__config["thingsboard"], self._config_dir)
         self.tb_client.connect()
         self.subscribe_to_required_topics()
@@ -519,15 +520,18 @@ class TBGatewayService:
                                     if self.tb_client.is_connected() and (
                                             self.__remote_configurator is None or not self.__remote_configurator.in_process):
                                         if self.tb_client.client.quality_of_service == 1:
-                                            success = event.get()[0] == event.TB_ERR_SUCCESS
-                                            is_published = event.get()[1]
+                                            (result, is_published) = event.get()
+                                            success = result == event.TB_ERR_SUCCESS
                                             if not is_published:
                                                 success = False
                                                 if self.__not_published < 50:
-                                                    self.__not_published += 1
+                                                    if self.__not_published % 10 == 0:
+                                                        self.__not_published += 1
+                                                        log.debug(f"Published error num: {self.__not_published}, rc: {result}, is_published: {is_published}.")
                                                 else:
                                                     self.__reconnect()
                                                     log.debug(f"Reconnected by published error after {self.__not_published} retries.")
+                                                    self.__not_published = 0
                                             else:
                                                 self.__not_published = 0
                                         else:
@@ -550,13 +554,14 @@ class TBGatewayService:
                         sleep(.2)
                 else:
                     sleep(.2)
-                    log.debug("Thingsboard client is not connected.")
-                    if self.__sum_not_connected < 320:
+                    if self.__sum_not_connected < 3000:
+                        if self.__sum_not_connected % 100 == 0:
+                            log.debug(f"Thingsboard client is not connected tries: {self.__sum_not_connected}")
                         self.__sum_not_connected += 1
                     else:
-                        self.__sum_not_connected = 0
                         self.__reconnect()
                         log.debug(f"Reconnected by not connected error after {self.__sum_not_connected} retries")
+                        self.__sum_not_connected = 0
             except Exception as e:
                 log.exception(e)
                 sleep(1)

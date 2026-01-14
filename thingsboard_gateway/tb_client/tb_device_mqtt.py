@@ -71,9 +71,6 @@ class TBPublishInfo:
 
     def get(self):
         self.message_info.wait_for_publish(timeout=2)
-        is_published = self.message_info.is_published()
-        log.debug(f"Return value from mesage rc: {self.message_info.rc}")
-        log.debug(f"Return value from mesage published: {is_published}")
         return (self.message_info.rc, self.message_info.is_published())
 
 
@@ -164,18 +161,17 @@ class TBDeviceMqttClient:
                 self._client.tls_insecure_set(False)
             except ValueError:
                 pass
-        self._client.enable_logger()
         self._client.connect(self.__host, self.__port, keepalive=keepalive)
         self.reconnect_delay_set(min_reconnect_delay, timeout)
         self._client.loop_start()
         self.__connect_callback = callback
 
     def disconnect(self):
-        self._client.disconnect()
         log.debug(self._client)
         log.debug("Disconnecting from ThingsBoard")
         self.__is_connected = False
-        self._client.loop_stop()
+        self._client.loop_stop(force=True)
+        self._client.disconnect()
 
     def stop(self):
         self.stopped = True
