@@ -130,13 +130,13 @@ class TBClient(threading.Thread):
                         self.client.connect(keepalive=keep_alive,
                                             min_reconnect_delay=self.__min_reconnect_delay)
                     except ConnectionRefusedError:
-                        log.exception("ConnectionRefusedError")
+                        log.debug("ConnectionRefusedError")
                         pass
                     except Exception as e:
-                        log.exception("connecting while: " + e)
+                        log.debug("connecting while: " + e)
                 time.sleep(60)
         except Exception as e:
-            log.exception("connecting outsite while:" + e)
+            log.debug("connecting outsite while:" + e)
             time.sleep(10)
 
         while not self.__stopped:
