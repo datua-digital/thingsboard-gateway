@@ -522,12 +522,13 @@ class TBGatewayService:
                                         if self.tb_client.client.quality_of_service == 1:
                                             (result, is_published) = event.get()
                                             success = result == event.TB_ERR_SUCCESS
+                                            log.debug(f"Published: rc: {result}, is_published: {is_published}, success: {success}")
                                             if not is_published:
                                                 success = False
                                                 if self.__not_published < 50:
+                                                    self.__not_published += 1
                                                     if self.__not_published % 10 == 0:
-                                                        self.__not_published += 1
-                                                        log.debug(f"Published error num: {self.__not_published}, rc: {result}, is_published: {is_published}.")
+                                                        log.debug(f"Published error num: {self.__not_published}")
                                                 else:
                                                     self.__reconnect()
                                                     log.debug(f"Reconnected by published error after {self.__not_published} retries.")
