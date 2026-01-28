@@ -134,6 +134,8 @@ class TBClient(threading.Thread):
                         pass
                     except Exception as e:
                         log.debug("connecting while: " + e)
+                else:
+                    log.debug(f"connecting to ThingsBoard: paused: {self.__paused}, stopped: {self.__stopped}, is_connected: {self.client.is_connected()}")
                 time.sleep(60)
         except Exception as e:
             log.debug("connecting outsite while:" + e)

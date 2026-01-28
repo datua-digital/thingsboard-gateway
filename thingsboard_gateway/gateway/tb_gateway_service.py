@@ -257,10 +257,15 @@ class TBGatewayService:
         except Exception as e:
             log.exception(e)
         self.tb_client.stop()
+        log.debug("Reconnecting from ThingsBoard: stop")
         self.tb_client.join(60)
+        log.debug("Reconnecting from ThingsBoard: join")
         self.tb_client = TBClient(self.__config["thingsboard"], self._config_dir)
+        log.debug("Reconnecting from ThingsBoard: new client")
         self.tb_client.connect()
+        log.debug("Reconnecting from ThingsBoard: connect")
         self.subscribe_to_required_topics()
+        log.debug("Reconnecting from ThingsBoard: subscribe topics")
         self.__subscribed_to_rpc_topics = True
 
     def __init_remote_configuration(self, force=False):

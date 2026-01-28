@@ -171,7 +171,9 @@ class TBDeviceMqttClient:
         log.debug("Disconnecting from ThingsBoard")
         self.__is_connected = False
         self._client.loop_stop(force=True)
+        log.debug("Disconnecting from ThingsBoard: loop stop")
         self._client.disconnect()
+        log.debug("Disconnecting from ThingsBoard: disconnect")
 
     def stop(self):
         self.stopped = True
