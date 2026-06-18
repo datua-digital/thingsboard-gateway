@@ -70,7 +70,7 @@ class TBPublishInfo:
         return self.message_info.mid
 
     def get(self):
-        self.message_info.wait_for_publish(timeout=2)
+        self.message_info.wait_for_publish(timeout=10)
         return (self.message_info.rc, self.message_info.is_published())
 
 
@@ -170,10 +170,10 @@ class TBDeviceMqttClient:
         log.debug(self._client)
         log.debug("Disconnecting from ThingsBoard")
         self.__is_connected = False
-        self._client.loop_stop(force=True)
-        log.debug("Disconnecting from ThingsBoard: loop stop")
         self._client.disconnect()
         log.debug("Disconnecting from ThingsBoard: disconnect")
+        self._client.loop_stop(force=True)
+        log.debug("Disconnecting from ThingsBoard: loop stop")
 
     def stop(self):
         self.stopped = True

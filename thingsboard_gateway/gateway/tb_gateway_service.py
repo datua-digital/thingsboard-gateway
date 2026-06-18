@@ -149,7 +149,7 @@ class TBGatewayService:
         self._send_thread = Thread(target=self.__read_data_from_storage, daemon=True,
                                    name="Send data to Thingsboard Thread")
         self._send_thread.start()
-        self.__min_pack_send_delay_ms = self.__config['thingsboard'].get('minPackSendDelayMS', 500) / 1000.0
+        self.__min_pack_send_delay_ms = self.__config['thingsboard'].get('minPackSendDelayMS', 2000) / 1000.0
         # changes by datua
         self.__not_published = 0
         self.__sum_not_connected = 0
@@ -456,13 +456,14 @@ class TBGatewayService:
         while not self.stopped:
             try:
                 if self.tb_client.is_connected():
-                    log.debug("Thingsboard client is connected.")
+                    #log.debug("Thingsboard client is connected.")
                     size = getsizeof(str(devices_data_in_event_pack))-2
                     events = []
 
                     if self.__remote_configurator is None or not self.__remote_configurator.in_process:
                         events = self._event_storage.get_event_pack()
-                        log.debug("Getting num events: {}".format(len(events)))
+                        if len(events) > 0:
+                            log.debug("Getting num events: {}".format(len(events)))
 
                     if events:
                         for event in events:
