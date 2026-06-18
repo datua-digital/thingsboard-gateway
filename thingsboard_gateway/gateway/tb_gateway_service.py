@@ -16,7 +16,7 @@ import logging
 import logging.config
 import logging.handlers
 from os import execv, listdir, path, pathsep, stat, system
-from queue import Queue
+from queue import Queue, Empty
 from random import choice
 from string import ascii_lowercase
 from sys import argv, executable, getsizeof
@@ -251,15 +251,23 @@ class TBGatewayService:
         self.tb_client.disconnect()
         self.tb_client.stop()
 
+    def __drain_published_events(self):
+        drained = 0
+        while not self._published_events.empty():
+            try:
+                self._published_events.get_nowait()
+                drained += 1
+            except Empty:
+                break
+        if drained:
+            log.debug("Drained %d stale published event(s) from queue.", drained)
+
     def __reconnect(self):
-        try:
-            self.tb_client.disconnect()
-        except Exception as e:
-            log.exception(e)
-        self.tb_client.stop()
-        log.debug("Reconnecting from ThingsBoard: stop")
-        self.tb_client.join(60)
-        log.debug("Reconnecting from ThingsBoard: join")
+        self.__drain_published_events()
+
+        old_client = self.tb_client
+        old_client.__paused = True  # stop reconnect attempts on old thread
+
         self.tb_client = TBClient(self.__config["thingsboard"], self._config_dir)
         log.debug("Reconnecting from ThingsBoard: new client")
         self.tb_client.connect()
@@ -267,6 +275,17 @@ class TBGatewayService:
         self.subscribe_to_required_topics()
         log.debug("Reconnecting from ThingsBoard: subscribe topics")
         self.__subscribed_to_rpc_topics = True
+
+        # Tear down old client in background — never block send thread on loop_stop
+        def _cleanup():
+            try:
+                log.debug("Reconnecting from ThingsBoard: stop Old Client")
+                old_client.stop()
+                log.debug("Reconnecting from ThingsBoard: join Old Client")
+                old_client.join(60)
+            except Exception as e:
+                log.exception(e)
+        Thread(target=_cleanup, daemon=True, name="TB client cleanup").start()
 
     def __init_remote_configuration(self, force=False):
         if (self.__config["thingsboard"].get("remoteConfiguration") or force) and self.__remote_configurator is None:
