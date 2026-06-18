@@ -279,6 +279,8 @@ class TBGatewayService:
         # Tear down old client in background — never block send thread on loop_stop
         def _cleanup():
             try:
+                log.debug("Reconnecting from ThingsBoard: disconnect Old Client")
+                old_client.disconnect()
                 log.debug("Reconnecting from ThingsBoard: stop Old Client")
                 old_client.stop()
                 log.debug("Reconnecting from ThingsBoard: join Old Client")
