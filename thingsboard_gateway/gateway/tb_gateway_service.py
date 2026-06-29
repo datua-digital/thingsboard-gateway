@@ -149,8 +149,10 @@ class TBGatewayService:
         self._send_thread = Thread(target=self.__read_data_from_storage, daemon=True,
                                    name="Send data to Thingsboard Thread")
         self._send_thread.start()
-        self.__min_pack_send_delay_ms = self.__config['thingsboard'].get('minPackSendDelayMS', 2000) / 1000.0
+        self.__min_pack_send_delay_ms = self.__config['thingsboard'].get('minPackSendDelayMS', 10000) / 1000.0
         # changes by datua
+        self.__publish_timeout_sec = self.__config['thingsboard'].get('publishTimeoutSec', 10)
+        self.__max_publish_retries = self.__config['thingsboard'].get('maxPublishRetries', 50)
         self.__not_published = 0
         self.__sum_not_connected = 0
         log.info("Gateway started.")
@@ -266,7 +268,7 @@ class TBGatewayService:
         self.__drain_published_events()
 
         old_client = self.tb_client
-        old_client.__paused = True  # stop reconnect attempts on old thread
+        old_client.pause() # stop reconnect attempts on old thread
 
         self.tb_client = TBClient(self.__config["thingsboard"], self._config_dir)
         log.debug("Reconnecting from ThingsBoard: new client")
@@ -285,6 +287,7 @@ class TBGatewayService:
                 old_client.stop()
                 log.debug("Reconnecting from ThingsBoard: join Old Client")
                 old_client.join(60)
+                log.debug("Reconnecting from ThingsBoard: finish stop Old Client")
             except Exception as e:
                 log.exception(e)
         Thread(target=_cleanup, daemon=True, name="TB client cleanup").start()
@@ -547,19 +550,21 @@ class TBGatewayService:
                                     if self.tb_client.is_connected() and (
                                             self.__remote_configurator is None or not self.__remote_configurator.in_process):
                                         if self.tb_client.client.quality_of_service == 1:
-                                            (result, is_published) = event.get()
+                                            (result, is_published) = event.get(self.__publish_timeout_sec)
                                             success = result == event.TB_ERR_SUCCESS
                                             log.debug(f"Published: rc: {result}, is_published: {is_published}, success: {success}")
                                             if not is_published:
                                                 success = False
-                                                if self.__not_published < 50:
+                                                if self.__not_published < self.__max_publish_retries:
                                                     self.__not_published += 1
                                                     if self.__not_published % 10 == 0:
                                                         log.debug(f"Published error num: {self.__not_published}")
+                                                    sleep(self.__min_pack_send_delay_ms)
                                                 else:
                                                     self.__reconnect()
                                                     log.debug(f"Reconnected by published error after {self.__not_published} retries.")
                                                     self.__not_published = 0
+                                                    break
                                             else:
                                                 self.__not_published = 0
                                         else:
